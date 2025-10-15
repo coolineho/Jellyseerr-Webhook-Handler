@@ -2,13 +2,18 @@
  *  Jellyseerr Webhook Handler
  *
  *  Exposes a cloud-accessible webhook endpoint for Jellyseerr.
- *  Receives JSON payloads, extracts the mediaName variable,
- *  and sends a customizable notification using one or more selected devices.
+ *  Receives JSON payloads, extracts variables, and sends a customizable notification
+ *  via one or more selected notification-capable devices.
  *
- *  Requirements:
- *   • OAuth enabled
- *   • User selects one or more notification-capable devices
- *   • Customizable notification message template
+ *  Variables available in payload:
+ *    • mediaName         = The title of the movie or show
+ *    • mediaType         = “movie” or “tv”
+ *    • description       = The media’s overview or synopsis
+ *    • notificationType  = The type of notification (e.g., MEDIA_AVAILABLE)
+ *    • requestedBy       = Username of who requested the media
+ *
+ *  Users may include these variables in the message template:
+ *    %mediaName%, %mediaType%, %description%, %notificationType%, %requestedBy%
  */
 definition(
     name: "Jellyseerr Webhook Handler",
@@ -44,10 +49,17 @@ def mainPage() {
                   multiple: true
             input name: "messageTemplate",
                   type: "text",
-                  title: "Notification message template",
-                  description: "Use %mediaName% to include the media title",
+                  title: "Notification message",                
                   defaultValue: "Your media \"%mediaName%\" is ready to stream!",
                   required: true
+                  paragraph """
+                    Available variables:
+                    • %mediaName% — Title of the movie or show  
+                    • %mediaType% — “movie” or “tv”  
+                    • %description% — Synopsis of the media  
+                    • %notificationType% — Event type (e.g., MEDIA_AVAILABLE)  
+                    • %requestedBy% — Username of the requester  
+                    """
         }
     }
 }
@@ -77,27 +89,32 @@ def initialize() {
 def handleWebhook() {
     try {
         def payload = request.JSON
-        def name = payload.mediaName ?: payload.subject ?: "Unknown"
-        log.info "Webhook received: mediaName=${name}"
+        // Extract all variables with safe defaults
+        def mediaName        = payload.mediaName        ?: "Unknown"
+        def mediaType        = payload.mediaType        ?: "Unknown"
+        def description      = payload.description      ?: ""
+        def notificationType = payload.notificationType ?: ""
+        def requestedBy      = payload.requestedBy      ?: ""
         
-        // Build notification message by replacing placeholder
-        def message = messageTemplate.replaceAll("%mediaName%", name)
+        log.info "Webhook received: mediaName=${mediaName}, mediaType=${mediaType}, requestedBy=${requestedBy}"
         
-        // Send notification to each selected device
+        // Replace placeholders in template
+        def message = messageTemplate
+            .replaceAll("%mediaName%", mediaName)
+            .replaceAll("%mediaType%", mediaType)
+            .replaceAll("%description%", description)
+            .replaceAll("%notificationType%", notificationType)
+            .replaceAll("%requestedBy%", requestedBy)
+        
+        // Send to each selected device
         notificationDevices.each { dev ->
             dev.deviceNotification(message)
             log.info "Notification sent to ${dev.displayName}: ${message}"
         }
         
-        return [
-            success: true,
-            message: "Notifications delivered"
-        ]
+        return [ success: true, message: "Notifications delivered" ]
     } catch (e) {
         log.error "Error processing webhook: ${e}"
-        return [
-            success: false,
-            message: "Error: ${e.message}"
-        ]
+        return [ success: false, message: "Error: ${e.message}" ]
     }
 }
