@@ -21,7 +21,7 @@ It receives JSON payloads when media becomes available, extracts key variables, 
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/jellyseerr-hubitat-webhook.git
+   git clone https://github.com/coolineho/Jellyseerr-Webhook-Handler.git
    ```
 2. **Add App Code to Hubitat**:
    - Open your Hubitat web interface.
