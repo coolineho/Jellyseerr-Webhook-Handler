@@ -15,6 +15,8 @@ It receives JSON payloads when media becomes available, extracts key variables, 
   - `%notificationType%` – Notification event type (e.g., `MEDIA_AVAILABLE`)
   - `%requestedBy%` – Username of the requester
 
+<img width="1554" height="875" alt="image" src="https://github.com/user-attachments/assets/4b6f3464-ef0f-4b7e-a82f-0a65149b2976" />
+
 ## Installation
 
 1. **Clone the repository**:
